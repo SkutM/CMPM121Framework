@@ -9,6 +9,8 @@ public class SpellCaster
     public int mana_reg;
     public Hittable.Team team;
     public Spell spell;
+    
+    public int spellPower;
 
     public IEnumerator ManaRegeneration()
     {
@@ -20,14 +22,17 @@ public class SpellCaster
         }
     }
 
-    public SpellCaster(int mana, int mana_reg, Hittable.Team team)
-    {
-        this.mana = mana;
-        this.max_mana = mana;
-        this.mana_reg = mana_reg;
-        this.team = team;
-        spell = new SpellBuilder().Build(this);
-    }
+    public SpellCaster(int mana, int mana_reg, Hittable.Team team, TextAsset spellsJson, int spellPower = 10)
+{
+    this.mana = mana;
+    this.max_mana = mana;
+    this.mana_reg = mana_reg;
+    this.team = team;
+    this.spellPower = spellPower;
+    var builder = new SpellBuilder(spellsJson);
+    spell = builder.Build(this);
+}
+
 
     public IEnumerator Cast(Vector3 where, Vector3 target)
     {        
@@ -38,5 +43,5 @@ public class SpellCaster
         }
         yield break;
     }
-
 }
+

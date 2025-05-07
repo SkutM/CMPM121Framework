@@ -5175,6 +5175,7 @@ MonoBehaviour:
   spellui: {fileID: 2085212185}
   speed: 5
   unit: {fileID: 0}
+  spellsJson: {fileID: 4900000, guid: 2315aa931f18d034e831c15c92e146a9, type: 3}
 --- !u!4 &1718273953
 Transform:
   m_ObjectHideFlags: 0
