@@ -1,52 +1,40 @@
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
+using UnityEngine.UI;
 
 public class SpellUI : MonoBehaviour
 {
-    public GameObject icon;
-    public RectTransform cooldown;
-    public TextMeshProUGUI manacost;
-    public TextMeshProUGUI damage;
-    public GameObject highlight;
-    public Spell spell;
-    float last_text_update;
-    const float UPDATE_DELAY = 1;
-    public GameObject dropbutton;
+    public SpellSlotUI[] slotUIs;  // array holding per-slot UI blocks
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public void UpdateSlot(int slotIndex, Spell spell)
     {
-        last_text_update = 0;
-    }
+        if (slotIndex >= 0 && slotIndex < slotUIs.Length)
+        {
+            Debug.Log("Updating slot " + slotIndex + " with spell " + spell.GetName());
 
-    public void SetSpell(Spell spell)
-    {
-        this.spell = spell;
-        GameManager.Instance.spellIconManager.PlaceSprite(spell.GetIcon(), icon.GetComponent<Image>());
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (spell == null) return;
-        if (Time.time > last_text_update + UPDATE_DELAY)
-        {
-            manacost.text = spell.GetManaCost().ToString();
-            damage.text = spell.GetDamage().ToString();
-            last_text_update = Time.time;
+            slotUIs[slotIndex].SetSpell(spell);
         }
-        
-        float since_last = Time.time - spell.last_cast;
-        float perc;
-        if (since_last > spell.GetCooldown())
-        {
-            perc = 0;
-        }
-        else
-        {
-            perc = 1-since_last / spell.GetCooldown();
-        }
-        cooldown.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 48 * perc);
     }
 }
+
+[System.Serializable]
+public class SpellSlotUI
+{
+    public GameObject rootObject;  // ← the parent GameObject you want to show/hide
+    public GameObject icon;
+    public TextMeshProUGUI manacost;
+    public TextMeshProUGUI damage;
+
+public void SetSpell(Spell spell)
+{
+    if (rootObject != null)
+        rootObject.SetActive(true);  // Make sure the UI slot is visible
+
+    GameManager.Instance.spellIconManager.PlaceSprite(spell.GetIcon(), icon.GetComponent<Image>());
+    manacost.text = spell.GetManaCost().ToString();
+    damage.text = spell.GetDamage().ToString();
+}
+
+}
+
+

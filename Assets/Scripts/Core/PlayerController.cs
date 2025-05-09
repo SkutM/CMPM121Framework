@@ -11,7 +11,8 @@ public class PlayerController : MonoBehaviour
     public HealthBar healthui;
     public ManaBar manaui;
 
-    public SpellCaster spellcaster;
+    public SpellCaster[] spellcasters = new SpellCaster[4];
+
     public SpellUI spellui;
 
     public int speed;
@@ -27,25 +28,54 @@ public class PlayerController : MonoBehaviour
         GameManager.Instance.player = gameObject;
     }
 
-    public void StartLevel()
+public void StartLevel()
+{
+    for (int i = 0; i < 4; i++)
     {
-        spellcaster = new SpellCaster(125, 8, Hittable.Team.PLAYER, spellsJson);
-        StartCoroutine(spellcaster.ManaRegeneration());
-        
-        hp = new Hittable(100, Hittable.Team.PLAYER, gameObject);
-        hp.OnDeath += Die;
-        hp.team = Hittable.Team.PLAYER;
-
-
-        healthui.SetHealth(hp);
-        manaui.SetSpellCaster(spellcaster);
-        spellui.SetSpell(spellcaster.spell);
+        spellcasters[i] = new SpellCaster(125, 8, Hittable.Team.PLAYER, spellsJson);
+        StartCoroutine(spellcasters[i].ManaRegeneration());
     }
 
-    void Update()
-    {
-        
-    }
+    hp = new Hittable(100, Hittable.Team.PLAYER, gameObject);
+    hp.OnDeath += Die;
+    hp.team = Hittable.Team.PLAYER;
+
+    healthui.SetHealth(hp);
+    manaui.SetSpellCaster(spellcasters[0]);
+
+    // ✅ Explicitly assign the arcane bolt to slot 0 at game start
+    SpellBuilder builder = new SpellBuilder(spellsJson);
+    Spell startingSpell = builder.Build("arcane_bolt", spellcasters[0]);
+    spellcasters[0].spell = startingSpell;
+    spellui.UpdateSlot(0, startingSpell);
+
+    Debug.Log("Player starts with Arcane Bolt in slot 0");
+}
+
+
+
+void Update()
+{
+    if (Keyboard.current.digit1Key.wasPressedThisFrame)
+        StartCoroutine(spellcasters[0].Cast(transform.position, GetMouseWorldPosition()));
+
+    if (Keyboard.current.digit2Key.wasPressedThisFrame)
+        StartCoroutine(spellcasters[1].Cast(transform.position, GetMouseWorldPosition()));
+
+    if (Keyboard.current.digit3Key.wasPressedThisFrame)
+        StartCoroutine(spellcasters[2].Cast(transform.position, GetMouseWorldPosition()));
+
+    if (Keyboard.current.digit4Key.wasPressedThisFrame)
+        StartCoroutine(spellcasters[3].Cast(transform.position, GetMouseWorldPosition()));
+}
+
+Vector3 GetMouseWorldPosition()
+{
+    Vector2 mouseScreen = Mouse.current.position.value;
+    Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(mouseScreen);
+    mouseWorld.z = 0;
+    return mouseWorld;
+}
 
     void OnAttack(InputValue value)
     {
@@ -53,7 +83,6 @@ public class PlayerController : MonoBehaviour
         Vector2 mouseScreen = Mouse.current.position.value;
         Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(mouseScreen);
         mouseWorld.z = 0;
-        StartCoroutine(spellcaster.Cast(transform.position, mouseWorld));
     }
 
     void OnMove(InputValue value)
@@ -79,10 +108,14 @@ public void ApplyWaveScaling(int wave)
     hp.SetMaxHP(maxHP);
     hp.hp = Mathf.RoundToInt(hpPercentage * maxHP);
 
-    spellcaster.max_mana = mana;
-    spellcaster.mana = mana;
-    spellcaster.mana_reg = manaRegen;
-    spellcaster.spellPower = spellPower;
+    for (int i = 0; i < 4; i++)
+{
+    spellcasters[i].max_mana = mana;
+    spellcasters[i].mana = mana;
+    spellcasters[i].mana_reg = manaRegen;
+    spellcasters[i].spellPower = spellPower;
+}
+
 
 }
 
@@ -90,4 +123,3 @@ public void ApplyWaveScaling(int wave)
 
     
 }
-
