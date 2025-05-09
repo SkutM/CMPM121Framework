@@ -3,12 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
-public class Spell 
+public class Spell
 {
     public float last_cast;
     public SpellCaster owner;
     public Hittable.Team team;
-
     public string description;
 
     public Spell(SpellCaster owner)
@@ -16,41 +15,17 @@ public class Spell
         this.owner = owner;
     }
 
-    public virtual string GetName()
-    {
-        return "Bolt";
-    }
+    public virtual string GetName() => "Bolt"; // shortened
+    public virtual int GetManaCost() => 10;
+    public virtual int GetDamage() => 100;
+    public virtual float GetCooldown() => 0.75f;
+    public virtual int GetIcon() => 0;
 
-    public virtual int GetManaCost()
-    {
-        return 10;
-    }
+    // does have value? use, otherwise empty
+    public virtual string GetDescription() => description ?? "";
 
-    public virtual int GetDamage()
-    {
-        return 100;
-    }
-
-    public virtual float GetCooldown()
-    {
-        return 0.75f;
-    }
-
-    public virtual int GetIcon()
-    {
-        return 0;
-    }
-
-    // ✅ ADD THIS METHOD:
-    public virtual string GetDescription()
-    {
-        return description ?? "";
-    }
-
-    public bool IsReady()
-    {
-        return (last_cast + GetCooldown() < Time.time);
-    }
+    // shortened
+    public bool IsReady() => (last_cast + GetCooldown() < Time.time);
 
     public virtual IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
     {
@@ -70,35 +45,37 @@ public class Spell
 
 public class BaseSpell : Spell
 {
-protected int damage;
-protected int manaCost;
-protected float cooldown;
-protected string trajectory;
-protected float speed;
-protected int spriteIndex;
+    // protected for these
+    protected int damage;
+    protected int manaCost;
+    protected float cooldown;
+    protected string trajectory;
+    protected float speed;
+    protected int spriteIndex;
 
     public string Trajectory
     {
-        get => trajectory;
-        set => trajectory = value;
+        get => trajectory; // access
+        set => trajectory = value; // assign
     }
 
     public float Speed
     {
         get => speed;
-        set => speed = value;
+        set => speed = value; // same
     }
 
+//help meeeee
 
-    public BaseSpell(SpellCaster owner) : base(owner) {}
+    //setting the owner reference
+    public BaseSpell(SpellCaster owner) : base(owner) { }
 
+    // 5-5 (NOTE: public override necessary)
     public override int GetDamage() => damage;
     public override int GetManaCost() => manaCost;
     public override float GetCooldown() => cooldown;
 
-
-
-    public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
+    public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team) // given
     {
         this.team = team;
         Vector3 direction = target - where;
@@ -108,21 +85,29 @@ protected int spriteIndex;
 
     public virtual void SetAttributes(JObject attributes)
     {
+
+        // for me: https://www.w3schools.com/jsref/jsref_parseint.asp
+        // damage = RPN.ParseInt(attributes["damage"]ToString(), GameManager.Instance.wave); 
+
+        // doesn't work 
+        //damage = RPN.ParseInt(attributes["damage"]?["amount"]?.ToString(), GameManager.Instance.wave);
         damage = RPN.ParseInt(attributes["damage"]?["amount"]?.ToString(), owner.spellPower, GameManager.Instance.wave);
         manaCost = RPN.ParseInt(attributes["mana_cost"]?.ToString(), owner.spellPower, GameManager.Instance.wave);
         cooldown = RPN.ParseFloat(attributes["cooldown"]?.ToString(), owner.spellPower, GameManager.Instance.wave);
 
-
         var proj = attributes["projectile"];
         if (proj != null)
         {
+            // debug steps here!
+            // removed
             trajectory = proj["trajectory"]?.ToString();
             speed = RPN.ParseFloat(proj["speed"]?.ToString(), owner.spellPower);
+
+            //trying to say: json have sprite ? yes, use it -- no? use 0 , (helps my brain)
             spriteIndex = proj["sprite"]?.ToObject<int>() ?? 0;
         }
     }
 }
-
 
 public class ModifierSpell : Spell
 {
@@ -133,24 +118,13 @@ public class ModifierSpell : Spell
         this.innerSpell = innerSpell;
     }
 
-    public override int GetManaCost()
-    {
-        return innerSpell.GetManaCost();
-    }
-
-    public override int GetDamage()
-    {
-        return innerSpell.GetDamage();
-    }
-
-    public override float GetCooldown()
-    {
-        return innerSpell.GetCooldown();
-    }
+    // forget . public override
+    public override int GetManaCost() => innerSpell.GetManaCost();
+    public override int GetDamage() => innerSpell.GetDamage();
+    public override float GetCooldown() => innerSpell.GetCooldown();
 
     public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
     {
-        Debug.Log("Applying modifier...");
         yield return innerSpell.Cast(where, target, team);
     }
 }
@@ -159,17 +133,14 @@ public class ArcaneSpraySpell : BaseSpell
 {
     private int projectileCount;
 
-    public ArcaneSpraySpell(SpellCaster owner) : base(owner) {}
+    public ArcaneSpraySpell(SpellCaster owner) : base(owner) { }
 
-    public override string GetName()
-    {
-        return "Arcane Spray";
-    }
-
+    public override string GetName() => "Arcane Spray";
 
     public override void SetAttributes(JObject attributes)
     {
         base.SetAttributes(attributes);
+        //earlier-- this took me way too long to figure out
         projectileCount = RPN.ParseInt(attributes["N"]?.ToString(), owner.spellPower);
     }
 
@@ -187,18 +158,14 @@ public class ArcaneSpraySpell : BaseSpell
 
 public class MagicMissileSpell : BaseSpell
 {
-    public MagicMissileSpell(SpellCaster owner) : base(owner) {}
+    public MagicMissileSpell(SpellCaster owner) : base(owner) { }
 
-    public override string GetName()
-    {
-        return "Magic Missile";
-    }
-
+    public override string GetName() => "Magic Missile";
 
     public override void SetAttributes(JObject attributes)
     {
         base.SetAttributes(attributes);
-        trajectory = "homing";  // homing
+        trajectory = "homing";
     }
 
     public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
@@ -216,28 +183,22 @@ public class ArcaneExplosionSpell : BaseSpell
     private float secondarySpeed;
     private int secondarySpriteIndex;
 
-    public ArcaneExplosionSpell(SpellCaster owner) : base(owner) {}
+    public ArcaneExplosionSpell(SpellCaster owner) : base(owner) { }
 
-    public override string GetName()
-    {
-        return "Arcane Explosion";
-    }
-
+    public override string GetName() => "Arcane Explosion";
 
     public override void SetAttributes(JObject attributes)
     {
         base.SetAttributes(attributes);
-
         secondaryCount = RPN.ParseInt(attributes["N"]?.ToString(), owner.spellPower);
         secondarySpeed = RPN.ParseFloat(attributes["secondary_projectile"]?["speed"]?.ToString(), owner.spellPower);
-        secondarySpriteIndex = attributes["secondary_projectile"]?["sprite"]?.ToObject<int>() ?? 0;
+        secondarySpriteIndex = attributes["secondary_projectile"]?["sprite"]?.ToObject<int>() ?? 0; // etc., etc.
     }
 
     public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
     {
         this.team = team;
         Vector3 direction = target - where;
-
         GameManager.Instance.projectileManager.CreateProjectile(spriteIndex, trajectory, where, direction, speed, OnExplosionHit);
         yield return new WaitForEndOfFrame();
     }
@@ -247,12 +208,12 @@ public class ArcaneExplosionSpell : BaseSpell
         if (other.team != team)
         {
             other.Damage(new Damage(GetDamage(), Damage.Type.ARCANE));
-
             for (int i = 0; i < secondaryCount; i++)
             {
                 float angle = UnityEngine.Random.Range(0, 360);
-                Vector3 dir = Quaternion.Euler(0, 0, angle) * Vector3.right;
+                Vector3 dir = Quaternion.Euler(0, 0, angle) * Vector3.right; // :)))))) not fun
                 GameManager.Instance.projectileManager.CreateProjectile(secondarySpriteIndex, "straight", impact, dir, secondarySpeed, OnHit);
+                // SEE HERE! Got here.
             }
         }
     }
@@ -260,16 +221,14 @@ public class ArcaneExplosionSpell : BaseSpell
 
 public class SplitterSpell : ModifierSpell
 {
-    public SplitterSpell(Spell inner) : base(inner) {}
+    public SplitterSpell(Spell inner) : base(inner) { }
 
     public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
     {
         this.team = team;
-
         Vector3 direction = target - where;
         Vector3 dir1 = Quaternion.Euler(0, 0, 10f) * direction;
         Vector3 dir2 = Quaternion.Euler(0, 0, -10f) * direction;
-
         yield return innerSpell.Cast(where, where + dir1, team);
         yield return innerSpell.Cast(where, where + dir2, team);
     }
@@ -277,14 +236,13 @@ public class SplitterSpell : ModifierSpell
 
 public class DoublerSpell : ModifierSpell
 {
-    public DoublerSpell(Spell inner) : base(inner) {}
+    public DoublerSpell(Spell inner) : base(inner) { }
 
     public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
     {
         this.team = team;
-
         yield return innerSpell.Cast(where, target, team);
-        yield return new WaitForSeconds(0.2f);  // short delay
+        yield return new WaitForSeconds(0.2f);
         yield return innerSpell.Cast(where, target, team);
     }
 }
@@ -294,29 +252,33 @@ public class DamageMagnifierSpell : ModifierSpell
     private float damageMultiplier = 1.5f;
     private float manaMultiplier = 1.2f;
 
-    public DamageMagnifierSpell(Spell inner) : base(inner) {}
+    public DamageMagnifierSpell(Spell inner) : base(inner) { }
 
     public override int GetDamage() => Mathf.RoundToInt(innerSpell.GetDamage() * damageMultiplier);
     public override int GetManaCost() => Mathf.RoundToInt(innerSpell.GetManaCost() * manaMultiplier);
 }
 
-
 public class SpeedModifierSpell : ModifierSpell
 {
     private float speedMultiplier = 1.5f;
 
-    public SpeedModifierSpell(Spell inner) : base(inner) {}
+    public SpeedModifierSpell(Spell inner) : base(inner) { }
 
     public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
     {
-        if (innerSpell is BaseSpell baseSpell)
+        // if innerSpell is BaseSpell baseSpell
+        // remember originalSpeed
+        // inc speed
+        // cast spell
+        // restore speed
+        // otherwise! 
+        // cast innerSPell no changes
+        if (innerSpell is BaseSpell baseSpell) 
         {
             float originalSpeed = baseSpell.Speed;
             baseSpell.Speed *= speedMultiplier;
-
             yield return innerSpell.Cast(where, target, team);
-
-            baseSpell.Speed = originalSpeed;  // reset after cast
+            baseSpell.Speed = originalSpeed;
         }
         else
         {
@@ -329,20 +291,18 @@ public class ChaosModifierSpell : ModifierSpell
 {
     private float damageMultiplier = 2.0f;
 
-    public ChaosModifierSpell(Spell inner) : base(inner) {}
+    public ChaosModifierSpell(Spell inner) : base(inner) { }
 
     public override int GetDamage() => Mathf.RoundToInt(innerSpell.GetDamage() * damageMultiplier);
 
     public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
     {
-        if (innerSpell is BaseSpell baseSpell)
+        if (innerSpell is BaseSpell baseSpell) // recall
         {
             string originalTrajectory = baseSpell.Trajectory;
             baseSpell.Trajectory = "spiraling";
-
             yield return innerSpell.Cast(where, target, team);
-
-            baseSpell.Trajectory = originalTrajectory;  // reset after cast (again)
+            baseSpell.Trajectory = originalTrajectory;
         }
         else
         {
@@ -356,7 +316,7 @@ public class HomingModifierSpell : ModifierSpell
     private float damageMultiplier = 0.75f;
     private float manaMultiplier = 1.2f;
 
-    public HomingModifierSpell(Spell inner) : base(inner) {}
+    public HomingModifierSpell(Spell inner) : base(inner) { }
 
     public override int GetDamage() => Mathf.RoundToInt(innerSpell.GetDamage() * damageMultiplier);
     public override int GetManaCost() => Mathf.RoundToInt(innerSpell.GetManaCost() * manaMultiplier);
@@ -367,10 +327,8 @@ public class HomingModifierSpell : ModifierSpell
         {
             string originalTrajectory = baseSpell.Trajectory;
             baseSpell.Trajectory = "homing";
-
             yield return innerSpell.Cast(where, target, team);
-
-            baseSpell.Trajectory = originalTrajectory;  // reset after cast (againx2)
+            baseSpell.Trajectory = originalTrajectory;
         }
         else
         {
@@ -384,13 +342,9 @@ public class ChainingLightningSpell : BaseSpell
     private int maxJumps;
     private float jumpRange;
 
-    public ChainingLightningSpell(SpellCaster owner) : base(owner) {}
+    public ChainingLightningSpell(SpellCaster owner) : base(owner) { }
 
-    public override string GetName()
-    {
-        return "Chain Lightning";
-    }
-
+    public override string GetName() => "Chain Lightning";
 
     public override void SetAttributes(JObject attributes)
     {
@@ -412,9 +366,12 @@ public class ChainingLightningSpell : BaseSpell
 
     private IEnumerator ChainHit(GameObject current, int jumpsLeft)
     {
+        // if (jumpsLeft <= 0) break;
         if (jumpsLeft <= 0) yield break;
 
         var enemyController = current.GetComponent<EnemyController>();
+        // if enemyController not null
+        //hitablle = enemyController.hp
         var hittable = enemyController != null ? enemyController.hp : null;
 
         if (hittable != null && hittable.team != team)
@@ -422,10 +379,9 @@ public class ChainingLightningSpell : BaseSpell
             hittable.Damage(new Damage(GetDamage(), Damage.Type.ARCANE));
         }
 
-        yield return new WaitForSeconds(0.1f);  // short delay for visual effect
+        yield return new WaitForSeconds(0.1f);
 
-        // Find next closest enemy within jump range
-        GameObject nextTarget = null;
+        GameObject nextTarget = null; // can't be "next" lol
         float closestDistance = float.MaxValue;
         foreach (var enemy in GameManager.Instance.GetAllEnemies())
         {
@@ -443,20 +399,15 @@ public class ChainingLightningSpell : BaseSpell
             yield return ChainHit(nextTarget, jumpsLeft - 1);
         }
     }
-
 }
 
 public class FireballSpell : BaseSpell
 {
     private float radius;
 
-    public FireballSpell(SpellCaster owner) : base(owner) {}
+    public FireballSpell(SpellCaster owner) : base(owner) { }
 
-    public override string GetName()
-    {
-        return "Fireball";
-    }
-
+    public override string GetName() => "Fireball";
 
     public override void SetAttributes(JObject attributes)
     {
@@ -465,36 +416,36 @@ public class FireballSpell : BaseSpell
     }
 
     public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
-{
-    this.team = team;
-    float radius = 5f; // example explosion radius
-
-    var enemies = new List<GameObject>(GameManager.Instance.GetAllEnemies());
-    foreach (var enemy in enemies)
     {
-        float dist = Vector3.Distance(where, enemy.transform.position);
-        if (dist <= radius)
-        {
-            var enemyController = enemy.GetComponent<EnemyController>();
-            var hittable = enemyController != null ? enemyController.hp : null;
+        this.team = team;
+        float radius = 5f;
 
-            if (hittable != null && hittable.team != team)
+        var enemies = new List<GameObject>(GameManager.Instance.GetAllEnemies());
+        foreach (var enemy in enemies)
+        {
+            float dist = Vector3.Distance(where, enemy.transform.position);
+            if (dist <= radius)
             {
-                hittable.Damage(new Damage(GetDamage(), Damage.Type.FIRE));
+                var enemyController = enemy.GetComponent<EnemyController>();
+                var hittable = enemyController != null ? enemyController.hp : null;
+
+                if (hittable != null && hittable.team != team)
+                {
+                    hittable.Damage(new Damage(GetDamage(), Damage.Type.FIRE));
+                }
             }
         }
-    }
 
-    yield return new WaitForEndOfFrame();
-}
+        yield return new WaitForEndOfFrame();
+    }
 }
 
 public class SlowOnHitModifierSpell : ModifierSpell
 {
-    private float slowFactor = 0.5f;  // Reduces speed to 50%
-    private float slowDuration = 2f;  // Lasts 2 seconds
+    private float slowFactor = 0.5f;
+    private float slowDuration = 2f;
 
-    public SlowOnHitModifierSpell(Spell inner) : base(inner) {}
+    public SlowOnHitModifierSpell(Spell inner) : base(inner) { }
 
     protected override void OnHit(Hittable other, Vector3 impact)
     {
@@ -516,25 +467,18 @@ public class SlowOnHitModifierSpell : ModifierSpell
         if (unit != null)
         {
             float originalSpeed = unit.movement.magnitude;
-
-            // Slow down (reduce vector magnitude)
             unit.movement *= slowFactor;
-
             yield return new WaitForSeconds(slowDuration);
-
-            // Restore original speed
             unit.movement = unit.movement.normalized * originalSpeed;
         }
     }
 }
 
-
-
 public class KnockbackModifierSpell : ModifierSpell
 {
-    private float knockbackForce = 5f;  // Adjust as needed
+    private float knockbackForce = 5f;
 
-    public KnockbackModifierSpell(Spell inner) : base(inner) {}
+    public KnockbackModifierSpell(Spell inner) : base(inner) { }
 
     protected override void OnHit(Hittable other, Vector3 impact)
     {
@@ -545,14 +489,9 @@ public class KnockbackModifierSpell : ModifierSpell
             var rb = other.owner.GetComponent<Rigidbody2D>();
             if (rb != null)
             {
-                Vector2 knockbackDirection = ((Vector2)(other.owner.transform.position) - (Vector2)impact).normalized;
+                Vector2 knockbackDirection = ((Vector2)(other.owner.transform.position) - (Vector2)impact).normalized; // yay.
                 rb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
             }
         }
     }
 }
-
-
-
-
-

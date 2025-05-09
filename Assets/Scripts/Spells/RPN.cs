@@ -16,13 +16,17 @@ public static class RPN
     private static double Parse(string expression, int power, int wave)
     {
         if (string.IsNullOrEmpty(expression))
-            return 0;
+            return 0; // d efault
 
         var stack = new Stack<double>();
-        var tokens = expression.Split(' ');
+        var tokens = expression.Split(' '); // space separated tokens
 
         foreach (var token in tokens)
         {
+
+            // token = nnumber, push to stack
+            // power? spellpower
+            // wave, wave number
             if (double.TryParse(token, out double number))
             {
                 stack.Push(number);
@@ -46,7 +50,7 @@ public static class RPN
                     case "-": stack.Push(a - b); break;
                     case "*": stack.Push(a * b); break;
                     case "/": stack.Push(a / b); break;
-                    default: throw new Exception($"Unknown token '{token}' in RPN expression.");
+                    default: throw new Exception($"DEBUG::: '{token}' ");
                 }
             }
         }

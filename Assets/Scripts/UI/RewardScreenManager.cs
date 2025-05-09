@@ -8,24 +8,24 @@ public class RewardScreenManager : MonoBehaviour
     public TextMeshProUGUI rewardDescription;
     public Button acceptButton;
     public Button skipButton;
-    public Button[] replaceSlotButtons;  // Buttons for slot 1–4 if full
+    public Button[] replaceButton;
 
     private PlayerController playerController;
     private Spell rewardSpell;
-    private bool skipRequested = false;  // NEW: track if skip was pressed
+    private bool skipRequested = false;
 
     void Start()
     {
         playerController = FindFirstObjectByType<PlayerController>();
 
-        acceptButton.onClick.AddListener(() => HandleAccept());
+        acceptButton.onClick.AddListener(() => HandleAccept()); // CMPM: 146
         skipButton.onClick.AddListener(() =>
         {
-            skipRequested = true;
-            CleanupAndStartNextWave();
+            skipRequested = true; // can't figure out how else to do this :L()
+            newWave();
         });
 
-        foreach (var button in replaceSlotButtons)
+        foreach (var button in replaceButton)
             button.gameObject.SetActive(false);
     }
 
@@ -35,19 +35,19 @@ public class RewardScreenManager : MonoBehaviour
             ShowReward();
     }
 
-void ShowReward()
-{
-    var spellBuilder = new SpellBuilder(playerController.spellsJson);
-    rewardSpell = spellBuilder.BuildRandomSpell(playerController.spellcasters[0]);
+    void ShowReward()
+    {
+        var spellBuilder = new SpellBuilder(playerController.spellsJson);
+        rewardSpell = spellBuilder.BuildRandomSpell(playerController.spellcasters[0]);
 
-    rewardDescription.text = 
-        $"{GetFullSpellName(rewardSpell)}\n" +
-        $"{GetFullSpellDescription(rewardSpell)}\n" + // ADD THIS LINE
-        $"Damage: {rewardSpell.GetDamage()}, Mana: {rewardSpell.GetManaCost()}";
+        rewardDescription.text =
+        // name, desc, damage, mana.
+            $"{spellName(rewardSpell)}\n" +
+            $"{spellDesc(rewardSpell)}\n" +
+            $"Damage: {rewardSpell.GetDamage()}, Mana: {rewardSpell.GetManaCost()}";
 
-    rewardUI.SetActive(true);
-}
-
+        rewardUI.SetActive(true);
+    }
 
     void HandleAccept()
     {
@@ -55,86 +55,71 @@ void ShowReward()
 
         if (emptySlot >= 0)
         {
-            AssignToSlot(emptySlot);
-            CleanupAndStartNextWave();
+            assignSlot(emptySlot);
+            newWave();
         }
         else
         {
-            // Show replace slot buttons
-            for (int i = 0; i < replaceSlotButtons.Length; i++)
+            for (int i = 0; i < replaceButton.Length; i++)
             {
                 int slot = i;
-                replaceSlotButtons[i].gameObject.SetActive(true);
-                replaceSlotButtons[i].onClick.RemoveAllListeners();
-                replaceSlotButtons[i].onClick.AddListener(() =>
+                replaceButton[i].gameObject.SetActive(true);
+                replaceButton[i].onClick.RemoveAllListeners();
+                replaceButton[i].onClick.AddListener(() =>
                 {
-                    AssignToSlot(slot);
-                    CleanupAndStartNextWave();
+                    assignSlot(slot);
+                    newWave();
                 });
             }
         }
     }
 
-    int FindFirstEmptySlot()
+    int FindFirstEmptySlot() // find the first empty slot in spellcasters array (0), named aptly (future reference)
     {
         for (int i = 0; i < playerController.spellcasters.Length; i++)
         {
             if (playerController.spellcasters[i].spell == null)
                 return i;
         }
-        return -1;  // No empty slot
+        return -1;
     }
 
-    void AssignToSlot(int slot)
+    void assignSlot(int slot)
     {
         if (slot < 0 || slot >= playerController.spellcasters.Length)
-        {
-            Debug.LogError($"Invalid slot index {slot}! Spellcasters array length: {playerController.spellcasters.Length}");
             return;
-        }
 
         playerController.spellcasters[slot].spell = rewardSpell;
         playerController.spellui.UpdateSlot(slot, rewardSpell);
-
-        Debug.Log($"Assigned reward to slot {slot}");
     }
 
-    void CleanupAndStartNextWave()
+    void newWave() // added some functionality for skipping ... 5-7
     {
         rewardSpell = null;
-        skipRequested = false;  // NEW: reset skip flag
+        skipRequested = false;
 
-        foreach (var button in replaceSlotButtons)
+        foreach (var button in replaceButton)
             button.gameObject.SetActive(false);
 
         rewardUI.SetActive(false);
         FindFirstObjectByType<EnemySpawner>().NextWave();
     }
 
-    string GetFullSpellName(Spell spell)
+    string spellName(Spell spell)
     {
         if (spell is ModifierSpell modifier)
-            return $"{modifier.GetType().Name.Replace("Spell", "")} → {GetFullSpellName(modifier.innerSpell)}";
+            return $"{modifier.GetType().Name.Replace("Spell", "")} → {spellName(modifier.innerSpell)}"; // an HOUR. took me an HOUR
         else
             return spell.GetName();
     }
 
-    string GetFullSpellDescription(Spell spell)
-{
-    if (spell is ModifierSpell modifier)
+    string spellDesc(Spell spell)
     {
-        return GetFullSpellDescription(modifier.innerSpell);  // drill down to base
+        if (spell is ModifierSpell modifier)
+            return spellDesc(modifier.innerSpell);
+        else if (spell is BaseSpell baseSpell)
+            return baseSpell.GetDescription();
+        else
+            return "";
     }
-    else if (spell is BaseSpell baseSpell)
-    {
-        return baseSpell.GetDescription();
-    }
-    else
-    {
-        return "";  // fallback if neither
-    }
-}
-
-
-    
 }

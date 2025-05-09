@@ -10,17 +10,11 @@ public class PlayerController : MonoBehaviour
     public Hittable hp;
     public HealthBar healthui;
     public ManaBar manaui;
-
     public SpellCaster[] spellcasters = new SpellCaster[4];
-
     public SpellUI spellui;
-
     public int speed;
-
     public Unit unit;
-
     public TextAsset spellsJson;
-
 
     void Start()
     {
@@ -28,54 +22,49 @@ public class PlayerController : MonoBehaviour
         GameManager.Instance.player = gameObject;
     }
 
-public void StartLevel()
-{
-    for (int i = 0; i < 4; i++)
+    public void StartLevel()
     {
-        spellcasters[i] = new SpellCaster(125, 8, Hittable.Team.PLAYER, spellsJson);
-        StartCoroutine(spellcasters[i].ManaRegeneration());
+        for (int i = 0; i < 4; i++)
+        {
+            spellcasters[i] = new SpellCaster(125, 8, Hittable.Team.PLAYER, spellsJson);
+            StartCoroutine(spellcasters[i].ManaRegeneration());
+        }
+
+        hp = new Hittable(100, Hittable.Team.PLAYER, gameObject);
+        hp.OnDeath += Die;
+        hp.team = Hittable.Team.PLAYER;
+
+        healthui.SetHealth(hp);
+        manaui.SetSpellCaster(spellcasters[0]);
+
+        SpellBuilder builder = new SpellBuilder(spellsJson);
+        Spell startingSpell = builder.Build("arcane_bolt", spellcasters[0]);
+        spellcasters[0].spell = startingSpell;
+        spellui.UpdateSlot(0, startingSpell);
     }
 
-    hp = new Hittable(100, Hittable.Team.PLAYER, gameObject);
-    hp.OnDeath += Die;
-    hp.team = Hittable.Team.PLAYER;
+    void Update()
+    {
+        if (Keyboard.current.digit1Key.wasPressedThisFrame)
+            StartCoroutine(spellcasters[0].Cast(transform.position, GetMouseWorldPosition())); // supposedly. Now no mouseClick simply key presses (MAKE NOTE)
 
-    healthui.SetHealth(hp);
-    manaui.SetSpellCaster(spellcasters[0]);
+        if (Keyboard.current.digit2Key.wasPressedThisFrame)
+            StartCoroutine(spellcasters[1].Cast(transform.position, GetMouseWorldPosition()));
 
-    // ✅ Explicitly assign the arcane bolt to slot 0 at game start
-    SpellBuilder builder = new SpellBuilder(spellsJson);
-    Spell startingSpell = builder.Build("arcane_bolt", spellcasters[0]);
-    spellcasters[0].spell = startingSpell;
-    spellui.UpdateSlot(0, startingSpell);
+        if (Keyboard.current.digit3Key.wasPressedThisFrame)
+            StartCoroutine(spellcasters[2].Cast(transform.position, GetMouseWorldPosition()));
 
-    Debug.Log("Player starts with Arcane Bolt in slot 0");
-}
+        if (Keyboard.current.digit4Key.wasPressedThisFrame)
+            StartCoroutine(spellcasters[3].Cast(transform.position, GetMouseWorldPosition()));
+    }
 
-
-
-void Update()
-{
-    if (Keyboard.current.digit1Key.wasPressedThisFrame)
-        StartCoroutine(spellcasters[0].Cast(transform.position, GetMouseWorldPosition()));
-
-    if (Keyboard.current.digit2Key.wasPressedThisFrame)
-        StartCoroutine(spellcasters[1].Cast(transform.position, GetMouseWorldPosition()));
-
-    if (Keyboard.current.digit3Key.wasPressedThisFrame)
-        StartCoroutine(spellcasters[2].Cast(transform.position, GetMouseWorldPosition()));
-
-    if (Keyboard.current.digit4Key.wasPressedThisFrame)
-        StartCoroutine(spellcasters[3].Cast(transform.position, GetMouseWorldPosition()));
-}
-
-Vector3 GetMouseWorldPosition()
-{
-    Vector2 mouseScreen = Mouse.current.position.value;
-    Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(mouseScreen);
-    mouseWorld.z = 0;
-    return mouseWorld;
-}
+    Vector3 GetMouseWorldPosition()
+    {
+        Vector2 mouseScreen = Mouse.current.position.value;
+        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(mouseScreen);
+        mouseWorld.z = 0;
+        return mouseWorld;
+    }
 
     void OnAttack(InputValue value)
     {
@@ -93,33 +82,25 @@ Vector3 GetMouseWorldPosition()
 
     void Die()
     {
-        Debug.Log("You Lost");
     }
 
+    public void ApplyWaveScaling(int wave)
+    {
+        int maxHP = RPN.ParseInt("95 wave 5 * +", wave);
+        int mana = RPN.ParseInt("90 wave 10 * +", wave);
+        int manaRegen = RPN.ParseInt("10 wave +", wave);
+        int spellPower = RPN.ParseInt("wave 10 *", wave);
 
-public void ApplyWaveScaling(int wave)
-{
-    int maxHP = RPN.ParseInt("95 wave 5 * +", wave);
-    int mana = RPN.ParseInt("90 wave 10 * +", wave);
-    int manaRegen = RPN.ParseInt("10 wave +", wave);
-    int spellPower = RPN.ParseInt("wave 10 *", wave);
+        float hpPercentage = (float)hp.hp / hp.max_hp;
+        hp.SetMaxHP(maxHP);
+        hp.hp = Mathf.RoundToInt(hpPercentage * maxHP);
 
-    float hpPercentage = (float)hp.hp / hp.max_hp;
-    hp.SetMaxHP(maxHP);
-    hp.hp = Mathf.RoundToInt(hpPercentage * maxHP);
-
-    for (int i = 0; i < 4; i++)
-{
-    spellcasters[i].max_mana = mana;
-    spellcasters[i].mana = mana;
-    spellcasters[i].mana_reg = manaRegen;
-    spellcasters[i].spellPower = spellPower;
-}
-
-
-}
-
-
-
-    
+        for (int i = 0; i < 4; i++)
+        {
+            spellcasters[i].max_mana = mana;
+            spellcasters[i].mana = mana;
+            spellcasters[i].mana_reg = manaRegen;
+            spellcasters[i].spellPower = spellPower;
+        }
+    }
 }

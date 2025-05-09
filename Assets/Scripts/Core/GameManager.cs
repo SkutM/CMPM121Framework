@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class GameManager 
+public class GameManager
 {
     public enum GameState
     {
@@ -13,14 +13,15 @@ public class GameManager
         COUNTDOWN,
         GAMEOVER
     }
+
     public GameState state;
-
     public int wave = 1;
-
-
     public int countdown;
+
     private static GameManager theInstance;
-    public static GameManager Instance {  get
+    public static GameManager Instance
+    {
+        get
         {
             if (theInstance == null)
                 theInstance = new GameManager();
@@ -29,7 +30,6 @@ public class GameManager
     }
 
     public GameObject player;
-    
     public ProjectileManager projectileManager;
     public SpellIconManager spellIconManager;
     public EnemySpriteManager enemySpriteManager;
@@ -43,6 +43,7 @@ public class GameManager
     {
         enemies.Add(enemy);
     }
+
     public void RemoveEnemy(GameObject enemy)
     {
         enemies.Remove(enemy);
@@ -52,7 +53,7 @@ public class GameManager
     {
         if (enemies == null || enemies.Count == 0) return null;
         if (enemies.Count == 1) return enemies[0];
-        return enemies.Aggregate((a,b) => (a.transform.position - point).sqrMagnitude < (b.transform.position - point).sqrMagnitude ? a : b);
+        return enemies.Aggregate((a, b) => (a.transform.position - point).sqrMagnitude < (b.transform.position - point).sqrMagnitude ? a : b);
     }
 
     private GameManager()
@@ -61,8 +62,7 @@ public class GameManager
     }
 
     public IEnumerable<GameObject> GetAllEnemies()
-{
-    return enemies;
-}
-
+    {
+        return enemies;
+    }
 }
