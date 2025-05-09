@@ -84,7 +84,7 @@ public class PlayerController : MonoBehaviour
     {
     }
 
-    public void ApplyWaveScaling(int wave)
+    public void ApplyWaveScaling(int wave) // will finish this 5-8
     {
         int maxHP = RPN.ParseInt("95 wave 5 * +", wave);
         int mana = RPN.ParseInt("90 wave 10 * +", wave);
@@ -102,5 +102,7 @@ public class PlayerController : MonoBehaviour
             spellcasters[i].mana_reg = manaRegen;
             spellcasters[i].spellPower = spellPower;
         }
+
+        // finished 5-9 :)))))))))
     }
 }
