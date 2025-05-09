@@ -59,4 +59,10 @@ public class GameManager
     {
         enemies = new List<GameObject>();
     }
+
+    public IEnumerable<GameObject> GetAllEnemies()
+{
+    return enemies;
+}
+
 }

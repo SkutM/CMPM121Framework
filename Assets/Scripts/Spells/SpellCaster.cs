@@ -30,7 +30,7 @@ public class SpellCaster
     this.team = team;
     this.spellPower = spellPower;
     var builder = new SpellBuilder(spellsJson);
-    spell = builder.Build(this);
+    spell = builder.Build("fireball", this);
 }
 
 

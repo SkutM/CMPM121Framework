@@ -14,7 +14,7 @@ public class Spell
         this.owner = owner;
     }
 
-    public string GetName()
+    public virtual string GetName()
     {
         return "Bolt";
     }
@@ -150,6 +150,12 @@ public class ArcaneSpraySpell : BaseSpell
 
     public ArcaneSpraySpell(SpellCaster owner) : base(owner) {}
 
+    public override string GetName()
+    {
+        return "Arcane Spray";
+    }
+
+
     public override void SetAttributes(JObject attributes)
     {
         base.SetAttributes(attributes);
@@ -171,6 +177,12 @@ public class ArcaneSpraySpell : BaseSpell
 public class MagicMissileSpell : BaseSpell
 {
     public MagicMissileSpell(SpellCaster owner) : base(owner) {}
+
+    public override string GetName()
+    {
+        return "Magic Missile";
+    }
+
 
     public override void SetAttributes(JObject attributes)
     {
@@ -194,6 +206,12 @@ public class ArcaneExplosionSpell : BaseSpell
     private int secondarySpriteIndex;
 
     public ArcaneExplosionSpell(SpellCaster owner) : base(owner) {}
+
+    public override string GetName()
+    {
+        return "Arcane Explosion";
+    }
+
 
     public override void SetAttributes(JObject attributes)
     {
@@ -349,3 +367,181 @@ public class HomingModifierSpell : ModifierSpell
         }
     }
 }
+
+public class ChainingLightningSpell : BaseSpell
+{
+    private int maxJumps;
+    private float jumpRange;
+
+    public ChainingLightningSpell(SpellCaster owner) : base(owner) {}
+
+    public override string GetName()
+    {
+        return "Chain Lightning";
+    }
+
+
+    public override void SetAttributes(JObject attributes)
+    {
+        base.SetAttributes(attributes);
+        maxJumps = RPN.ParseInt(attributes["N"]?.ToString(), owner.spellPower);
+        jumpRange = RPN.ParseFloat(attributes["jump_range"]?.ToString(), owner.spellPower);
+    }
+
+    public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
+    {
+        this.team = team;
+        GameObject firstTarget = GameManager.Instance.GetClosestEnemy(target);
+        if (firstTarget != null)
+        {
+            yield return ChainHit(firstTarget, maxJumps);
+        }
+        yield return new WaitForEndOfFrame();
+    }
+
+    private IEnumerator ChainHit(GameObject current, int jumpsLeft)
+    {
+        if (jumpsLeft <= 0) yield break;
+
+        var enemyController = current.GetComponent<EnemyController>();
+        var hittable = enemyController != null ? enemyController.hp : null;
+
+        if (hittable != null && hittable.team != team)
+        {
+            hittable.Damage(new Damage(GetDamage(), Damage.Type.ARCANE));
+        }
+
+        yield return new WaitForSeconds(0.1f);  // short delay for visual effect
+
+        // Find next closest enemy within jump range
+        GameObject nextTarget = null;
+        float closestDistance = float.MaxValue;
+        foreach (var enemy in GameManager.Instance.GetAllEnemies())
+        {
+            if (enemy == current) continue;
+            float dist = Vector3.Distance(current.transform.position, enemy.transform.position);
+            if (dist < closestDistance && dist <= jumpRange)
+            {
+                closestDistance = dist;
+                nextTarget = enemy;
+            }
+        }
+
+        if (nextTarget != null)
+        {
+            yield return ChainHit(nextTarget, jumpsLeft - 1);
+        }
+    }
+
+}
+
+public class FireballSpell : BaseSpell
+{
+    private float radius;
+
+    public FireballSpell(SpellCaster owner) : base(owner) {}
+
+    public override string GetName()
+    {
+        return "Fireball";
+    }
+
+
+    public override void SetAttributes(JObject attributes)
+    {
+        base.SetAttributes(attributes);
+        radius = RPN.ParseFloat(attributes["radius"]?.ToString(), owner.spellPower);
+    }
+
+    public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
+{
+    this.team = team;
+    float radius = 5f; // example explosion radius
+
+    var enemies = new List<GameObject>(GameManager.Instance.GetAllEnemies());
+    foreach (var enemy in enemies)
+    {
+        float dist = Vector3.Distance(where, enemy.transform.position);
+        if (dist <= radius)
+        {
+            var enemyController = enemy.GetComponent<EnemyController>();
+            var hittable = enemyController != null ? enemyController.hp : null;
+
+            if (hittable != null && hittable.team != team)
+            {
+                hittable.Damage(new Damage(GetDamage(), Damage.Type.FIRE));
+            }
+        }
+    }
+
+    yield return new WaitForEndOfFrame();
+}
+}
+
+public class SlowOnHitModifierSpell : ModifierSpell
+{
+    private float slowFactor = 0.5f;  // Reduces speed to 50%
+    private float slowDuration = 2f;  // Lasts 2 seconds
+
+    public SlowOnHitModifierSpell(Spell inner) : base(inner) {}
+
+    protected override void OnHit(Hittable other, Vector3 impact)
+    {
+        base.OnHit(other, impact);
+
+        if (other.owner != null)
+        {
+            var enemyController = other.owner.GetComponent<EnemyController>();
+            if (enemyController != null)
+            {
+                enemyController.StartCoroutine(ApplySlow(enemyController));
+            }
+        }
+    }
+
+    private IEnumerator ApplySlow(EnemyController enemy)
+    {
+        var unit = enemy.GetComponent<Unit>();
+        if (unit != null)
+        {
+            float originalSpeed = unit.movement.magnitude;
+
+            // Slow down (reduce vector magnitude)
+            unit.movement *= slowFactor;
+
+            yield return new WaitForSeconds(slowDuration);
+
+            // Restore original speed
+            unit.movement = unit.movement.normalized * originalSpeed;
+        }
+    }
+}
+
+
+
+public class KnockbackModifierSpell : ModifierSpell
+{
+    private float knockbackForce = 5f;  // Adjust as needed
+
+    public KnockbackModifierSpell(Spell inner) : base(inner) {}
+
+    protected override void OnHit(Hittable other, Vector3 impact)
+    {
+        base.OnHit(other, impact);
+
+        if (other.owner != null)
+        {
+            var rb = other.owner.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                Vector2 knockbackDirection = ((Vector2)(other.owner.transform.position) - (Vector2)impact).normalized;
+                rb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
+            }
+        }
+    }
+}
+
+
+
+
+
