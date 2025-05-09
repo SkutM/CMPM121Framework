@@ -94,6 +94,9 @@ public Spell Build(string spellName, SpellCaster owner)
         baseSpell.SetAttributes(def);
     }
 
+    spell.description = def["description"]?.ToString();
+
+
     return spell;
 }
 
@@ -141,6 +144,8 @@ public Spell BuildRandomSpell(SpellCaster owner)
                 break;
         }
     }
+
+    
 
     return spell;
 }

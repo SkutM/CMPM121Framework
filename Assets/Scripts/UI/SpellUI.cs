@@ -6,12 +6,18 @@ public class SpellUI : MonoBehaviour
 {
     public SpellSlotUI[] slotUIs;  // array holding per-slot UI blocks
 
+    public string description;  // or private with a getter if you prefer
+
+    public string GetDescription()
+    {
+        return description;
+    }
+
     public void UpdateSlot(int slotIndex, Spell spell)
     {
         if (slotIndex >= 0 && slotIndex < slotUIs.Length)
         {
             Debug.Log("Updating slot " + slotIndex + " with spell " + spell.GetName());
-
             slotUIs[slotIndex].SetSpell(spell);
         }
     }
@@ -25,16 +31,13 @@ public class SpellSlotUI
     public TextMeshProUGUI manacost;
     public TextMeshProUGUI damage;
 
-public void SetSpell(Spell spell)
-{
-    if (rootObject != null)
-        rootObject.SetActive(true);  // Make sure the UI slot is visible
+    public void SetSpell(Spell spell)
+    {
+        if (rootObject != null)
+            rootObject.SetActive(true);  // Make sure the UI slot is visible
 
-    GameManager.Instance.spellIconManager.PlaceSprite(spell.GetIcon(), icon.GetComponent<Image>());
-    manacost.text = spell.GetManaCost().ToString();
-    damage.text = spell.GetDamage().ToString();
+        GameManager.Instance.spellIconManager.PlaceSprite(spell.GetIcon(), icon.GetComponent<Image>());
+        manacost.text = spell.GetManaCost().ToString();
+        damage.text = spell.GetDamage().ToString();
+    }
 }
-
-}
-
-

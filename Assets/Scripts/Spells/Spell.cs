@@ -9,6 +9,8 @@ public class Spell
     public SpellCaster owner;
     public Hittable.Team team;
 
+    public string description;
+
     public Spell(SpellCaster owner)
     {
         this.owner = owner;
@@ -39,6 +41,12 @@ public class Spell
         return 0;
     }
 
+    // ✅ ADD THIS METHOD:
+    public virtual string GetDescription()
+    {
+        return description ?? "";
+    }
+
     public bool IsReady()
     {
         return (last_cast + GetCooldown() < Time.time);
@@ -52,13 +60,14 @@ public class Spell
     }
 
     protected virtual void OnHit(Hittable other, Vector3 impact)
-{
-    if (other.team != team)
     {
-        other.Damage(new Damage(GetDamage(), Damage.Type.ARCANE));
+        if (other.team != team)
+        {
+            other.Damage(new Damage(GetDamage(), Damage.Type.ARCANE));
+        }
     }
 }
-}
+
 public class BaseSpell : Spell
 {
 protected int damage;
@@ -86,6 +95,8 @@ protected int spriteIndex;
     public override int GetDamage() => damage;
     public override int GetManaCost() => manaCost;
     public override float GetCooldown() => cooldown;
+
+
 
     public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
     {

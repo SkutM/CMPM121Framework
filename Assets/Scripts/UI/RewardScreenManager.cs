@@ -35,15 +35,19 @@ public class RewardScreenManager : MonoBehaviour
             ShowReward();
     }
 
-    void ShowReward()
-    {
-        var spellBuilder = new SpellBuilder(playerController.spellsJson);
-        rewardSpell = spellBuilder.BuildRandomSpell(playerController.spellcasters[0]);
+void ShowReward()
+{
+    var spellBuilder = new SpellBuilder(playerController.spellsJson);
+    rewardSpell = spellBuilder.BuildRandomSpell(playerController.spellcasters[0]);
 
-        rewardDescription.text = $"{GetFullSpellName(rewardSpell)}\nDamage: {rewardSpell.GetDamage()}, Mana: {rewardSpell.GetManaCost()}";
+    rewardDescription.text = 
+        $"{GetFullSpellName(rewardSpell)}\n" +
+        $"{GetFullSpellDescription(rewardSpell)}\n" + // ADD THIS LINE
+        $"Damage: {rewardSpell.GetDamage()}, Mana: {rewardSpell.GetManaCost()}";
 
-        rewardUI.SetActive(true);
-    }
+    rewardUI.SetActive(true);
+}
+
 
     void HandleAccept()
     {
@@ -114,4 +118,23 @@ public class RewardScreenManager : MonoBehaviour
         else
             return spell.GetName();
     }
+
+    string GetFullSpellDescription(Spell spell)
+{
+    if (spell is ModifierSpell modifier)
+    {
+        return GetFullSpellDescription(modifier.innerSpell);  // drill down to base
+    }
+    else if (spell is BaseSpell baseSpell)
+    {
+        return baseSpell.GetDescription();
+    }
+    else
+    {
+        return "";  // fallback if neither
+    }
+}
+
+
+    
 }
